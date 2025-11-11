@@ -1,4 +1,4 @@
-# dataextractor.github.io
+# pH-Sorter.github.io
 pH Sorter Documentation
 
 German Version
