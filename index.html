@@ -60,16 +60,18 @@
   </style>
 </head>
 <body>
-  <h1>🧪 pH Sorter</h1>
-  <p>Dieses Tool verarbeitet CSV-Dateien vom pH-Messgerät.</p>
+  <h1>🧪 pH-Sorter</h1>
+  <p>Dieses Web-Tool automatisiert die Nachbearbeitung von pH-Messungen aus dem Mettler Toledo SevenDirect pH-Meter.
+Das Gerät exportiert jede Messung als einzelne CSV-Datei, was die Auswertung und Archivierung schnell unübersichtlich macht.
+Der pH-Sorter kombiniert diese Einzeldateien automatisch in eine saubere Excel-Tabelle und benennt die Dateien konsistent um.</p>
   <div class="card">
     <ol class="hint">
       <li>CSV-Dateien aus dem Messgerät auswählen (Mehrfachauswahl möglich).</li>
       <li>Klicke auf <strong>„Auswerten“</strong>.</li>
-      <li>Du erhältst ein ZIP mit:
+      <li>Man erhält eine ZIP-Datei mit:
         <ul>
           <li>nur gültigen Messungen,</li>
-          <li>CSV-Dateien umbenannt nach Sample ID (<code>SampleID.csv</code>),</li>
+          <li>CSV-Dateien umbenannt nach der eingegebenen Sample ID (<code>SampleID.csv</code>),</li>
           <li><code>pH_summary.xlsx</code> mit Sample ID &amp; pH.</li>
         </ul>
       </li>
