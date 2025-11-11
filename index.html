@@ -88,6 +88,11 @@
       el.textContent += message + "\n";
     }
 
+    // Teilt eine CSV-Zeile bei Kommas außerhalb von Anführungszeichen
+    function splitCsvLine(line) {
+      return line.match(/("([^"]|"")*"|[^,])+/g) || [];
+    }
+
     document.getElementById("runBtn").addEventListener("click", async () => {
       const input = document.getElementById("fileInput");
       const files = input.files;
@@ -126,20 +131,27 @@
           let phValue = null;
           let status = null;
 
-          for (const line of lines) {
-            if (!line.trim()) continue;
+          for (let line of lines) {
+            line = line.trim();
+            if (!line) continue;
 
-            const parts = line.split(",");
+            const parts = splitCsvLine(line);
             if (parts.length < 2) continue;
 
-            const key = parts[0].replace(/^"|"$/g, "").trim();
-            const value = parts.slice(1).join(",").replace(/^"|"$/g, "").trim();
+            let rawKey = parts[0].replace(/^"|"$/g, "").trim();
+            // BOM und Sonderzeichen entfernen
+            rawKey = rawKey.replace(/^\uFEFF/, "");
+            const key = rawKey.toLowerCase();
 
-            if (key === "Sample ID" || key === "Proben-ID") {
+            let value = parts.slice(1).join(",").replace(/^"|"$/g, "").trim();
+
+            // Sample ID / Proben-ID erkennen
+            if (key.includes("sample id") || key.includes("proben-id")) {
               sampleId = value;
             }
 
-            if (key === "Measurement result" || key === "Messergebnis") {
+            // Messergebnis / Measurement result
+            if (key.includes("measurement result") || key.includes("messergebnis")) {
               const m = value.match(/([-+]?\d+(?:[.,]\d+)?)/);
               if (m) {
                 phValue = parseFloat(m[1].replace(",", "."));
@@ -148,18 +160,20 @@
               }
             }
 
-            if (key === "Result status" || key === "Ergebnisstatus") {
+            // Ergebnisstatus
+            if (key.includes("result status") || key.includes("ergebnisstatus")) {
               status = value;
             }
           }
 
+          // Ausschlussregeln
           if (sampleId === "---") {
             deleted++;
             log(`Ignoriert (Sample-ID '---'): ${file.name}`);
             continue;
           }
 
-          if (status && status.includes("Fehler")) {
+          if (status && status.toLowerCase().includes("fehler")) {
             deleted++;
             log(`Ignoriert (Status 'Fehler'): ${file.name}`);
             continue;
@@ -183,6 +197,7 @@
           return;
         }
 
+        // Excel pH_summary.xlsx erzeugen
         const worksheet = XLSX.utils.json_to_sheet(rows);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "pH");
