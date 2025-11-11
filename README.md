@@ -34,7 +34,7 @@ Der **pH-Sorter** kombiniert diese Einzeldateien automatisch in eine saubere Exc
 
 ## Verwendung
 
-1. Seite öffnen: https://tintin353.github.io/dataextractor.github.io/
+1. Seite öffnen: https://tintin353.github.io/pH-Sorter.github.io/
 2. CSV-Dateien auswählen.
 3. „Auswerten“ klicken.
 4. Ergebnis: `ph_sorter_output.zip` wird heruntergeladen.
@@ -109,7 +109,7 @@ The **pH-Sorter** automatically combines these files into a clean Excel summary 
 
 ## Usage
 
-1. Open: https://tintin353.github.io/dataextractor.github.io/
+1. Open: https://tintin353.github.io/pH-Sorter.github.io/
 2. Select CSV files.
 3. Click **"Auswerten" (Evaluate)**.
 4. The browser downloads `ph_sorter_output.zip`.
