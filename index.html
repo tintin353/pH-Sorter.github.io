@@ -82,15 +82,10 @@
     <div id="log" class="log"></div>
   </div>
 
-  <script>
+    <script>
     function log(message) {
       const el = document.getElementById("log");
       el.textContent += message + "\n";
-    }
-
-    // Teilt eine CSV-Zeile bei Kommas außerhalb von Anführungszeichen
-    function splitCsvLine(line) {
-      return line.match(/("([^"]|"")*"|[^,])+/g) || [];
     }
 
     document.getElementById("runBtn").addEventListener("click", async () => {
@@ -132,36 +127,36 @@
           let status = null;
 
           for (let line of lines) {
-            line = line.trim();
-            if (!line) continue;
+            if (!line.trim()) continue;
 
-            const parts = splitCsvLine(line);
-            if (parts.length < 2) continue;
+            // Nur am ersten Komma trennen: key,"value"
+            const m = line.match(/^(.*?),(.*)$/);
+            if (!m) continue;
 
-            let rawKey = parts[0].replace(/^"|"$/g, "").trim();
-            // BOM und Sonderzeichen entfernen
+            let rawKey = m[1].replace(/^"|"$/g, "").trim();
+            let value = m[2].replace(/^"|"$/g, "").trim();
+
+            // BOM oder versteckte Zeichen entfernen
             rawKey = rawKey.replace(/^\uFEFF/, "");
             const key = rawKey.toLowerCase();
 
-            let value = parts.slice(1).join(",").replace(/^"|"$/g, "").trim();
-
-            // Sample ID / Proben-ID erkennen
-            if (key.includes("sample id") || key.includes("proben-id")) {
+            // Sample ID
+            if (key === "sample id" || key === "proben-id") {
               sampleId = value;
             }
 
-            // Messergebnis / Measurement result
-            if (key.includes("measurement result") || key.includes("messergebnis")) {
-              const m = value.match(/([-+]?\d+(?:[.,]\d+)?)/);
-              if (m) {
-                phValue = parseFloat(m[1].replace(",", "."));
+            // pH-Wert aus Measurement result
+            if (key === "measurement result" || key === "messergebnis") {
+              const mm = value.match(/([-+]?\d+(?:[.,]\d+)?)/);
+              if (mm) {
+                phValue = parseFloat(mm[1].replace(",", "."));
               } else {
                 phValue = value || null;
               }
             }
 
             // Ergebnisstatus
-            if (key.includes("result status") || key.includes("ergebnisstatus")) {
+            if (key === "result status" || key === "ergebnisstatus") {
               status = value;
             }
           }
