@@ -2,12 +2,14 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>pH Sorter</title>
+  <title>pH-Sorter – SevenDirect CSV Auswertung</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <!-- JS-Bibliotheken von CDN -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -15,13 +17,26 @@
       margin: 40px auto;
       padding: 0 16px;
       line-height: 1.5;
+      color: #222;
     }
-    h1 { font-size: 1.8rem; margin-bottom: 0.3rem; }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.3rem;
+    }
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: #555;
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+    }
     .card {
       border: 1px solid #ddd;
       border-radius: 8px;
       padding: 16px;
       margin-top: 16px;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.03);
     }
     input[type="file"] {
       margin: 12px 0;
@@ -36,6 +51,10 @@
     button.primary {
       background: #2563eb;
       color: white;
+      transition: background 0.2s;
+    }
+    button.primary:hover {
+      background: #1d4ed8;
     }
     button.primary:disabled {
       opacity: 0.5;
@@ -57,13 +76,40 @@
       font-size: 0.92rem;
       color: #555;
     }
+    footer {
+      margin-top: 40px;
+      font-size: 0.85rem;
+      color: #777;
+      text-align: center;
+    }
   </style>
 </head>
+
 <body>
   <h1>🧪 pH-Sorter</h1>
-  <p>Dieses Web-Tool automatisiert die Nachbearbeitung von pH-Messungen aus dem Mettler Toledo SevenDirect pH-Meter.
-Das Gerät exportiert jede Messung als einzelne CSV-Datei, was die Auswertung und Archivierung schnell unübersichtlich macht.
-Der pH-Sorter kombiniert diese Einzeldateien automatisch in eine saubere Excel-Tabelle und benennt die Dateien konsistent um.</p>
+  <h2>Automatisierte Auswertung von pH-Messungen (Mettler Toledo SevenDirect)</h2>
+
+  <div style="
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 0.95rem;
+  ">
+    ⚠️ <strong>Hinweis:</strong> Dieses Tool funktioniert nur, wenn im Messgerät eine <strong>Sample ID</strong> vergeben wurde. 
+    <br> 
+    Dateien ohne Sample ID werden automatisch ignoriert und nicht in die Excel-Tabelle übernommen.
+  </div>
+
+  <p>Dieses Web-Tool automatisiert die Nachbearbeitung von pH-Messungen aus dem 
+    <strong>Mettler Toledo SevenDirect pH-Meter</strong>.
+  </p>
+  <p> Das Gerät exportiert jede Messung als einzelne CSV-Datei, was die Auswertung und Archivierung unübersichtlich macht. 
+    Der pH-Sorter kombiniert diese Einzeldateien automatisch in eine saubere Excel-Tabelle und benennt die Dateien konsistent um.
+  </p>
+
   <div class="card">
     <ol class="hint">
       <li>CSV-Dateien aus dem Messgerät auswählen (Mehrfachauswahl möglich).</li>
@@ -71,7 +117,7 @@ Der pH-Sorter kombiniert diese Einzeldateien automatisch in eine saubere Excel-T
       <li>Man erhält eine ZIP-Datei mit:
         <ul>
           <li>nur gültigen Messungen,</li>
-          <li>CSV-Dateien umbenannt nach der eingegebenen Sample ID (<code>SampleID.csv</code>),</li>
+          <li>CSV-Dateien umbenannt nach der Sample ID (<code>SampleID.csv</code>),</li>
           <li><code>pH_summary.xlsx</code> mit Sample ID &amp; pH.</li>
         </ul>
       </li>
@@ -83,6 +129,10 @@ Der pH-Sorter kombiniert diese Einzeldateien automatisch in eine saubere Excel-T
 
     <div id="log" class="log"></div>
   </div>
+
+  <footer>
+    © 2025 Institut für Bodenkunde und Bodenerhaltung (IFZ), JLU Gießen
+  </footer>
 
   <script>
     function log(message) {
@@ -115,7 +165,6 @@ Der pH-Sorter kombiniert diese Einzeldateien automatisch in eine saubere Excel-T
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
           reader.onerror = reject;
-          // Encoding ohne Zwang; Browser erkennt BOM selbst
           reader.readAsText(file);
         });
       }
@@ -124,7 +173,6 @@ Der pH-Sorter kombiniert diese Einzeldateien automatisch in eine saubere Excel-T
         for (const file of files) {
           const content = await readFileAsText(file);
 
-          // Alle Zeilenumbrüche unterstützen
           const lines = content.split(/\r\n|\n|\r/);
           let sampleId = null;
           let phValue = null;
@@ -132,59 +180,27 @@ Der pH-Sorter kombiniert diese Einzeldateien automatisch in eine saubere Excel-T
 
           for (let line of lines) {
             if (!line.trim()) continue;
-
-            // Nur am ersten Komma trennen: key,"value"
             const idx = line.indexOf(",");
             if (idx === -1) continue;
 
             let rawKey = line.slice(0, idx).replace(/^"|"$/g, "").trim();
             let value = line.slice(idx + 1).replace(/^"|"$/g, "").trim();
-
-            // BOM / unsichtbare Zeichen entfernen
             rawKey = rawKey.replace(/^\uFEFF/, "");
             const key = rawKey.toLowerCase();
 
-            // Sample ID erkennen (robust)
-            if (key.includes("sample id") || key.includes("proben-id")) {
-              sampleId = value;
-            }
-
-            // pH-Wert aus Measurement result / Messergebnis
+            if (key.includes("sample id") || key.includes("proben-id")) sampleId = value;
             if (key.includes("measurement result") || key.includes("messergebnis")) {
               const m = value.match(/([-+]?\d+(?:[.,]\d+)?)/);
-              if (m) {
-                phValue = parseFloat(m[1].replace(",", "."));
-              } else {
-                phValue = value || null;
-              }
+              phValue = m ? parseFloat(m[1].replace(",", ".")) : (value || null);
             }
-
-            // Ergebnisstatus
-            if (key.includes("result status") || key.includes("ergebnisstatus")) {
-              status = value;
-            }
+            if (key.includes("result status") || key.includes("ergebnisstatus")) status = value;
           }
 
-          // Ausschlussregeln
-          if (sampleId === "---") {
-            deleted++;
-            log(`Ignoriert (Sample-ID '---'): ${file.name}`);
-            continue;
-          }
-
-          if (status && status.toLowerCase().includes("fehler")) {
-            deleted++;
-            log(`Ignoriert (Status 'Fehler'): ${file.name}`);
-            continue;
-          }
-
-          if (!sampleId) {
-            log(`Ignoriert (keine Sample ID gefunden): ${file.name}`);
-            continue;
-          }
+          if (sampleId === "---") { deleted++; log(`Ignoriert (Sample-ID '---'): ${file.name}`); continue; }
+          if (status && status.toLowerCase().includes("fehler")) { deleted++; log(`Ignoriert (Status 'Fehler'): ${file.name}`); continue; }
+          if (!sampleId) { log(`Ignoriert (keine Sample ID gefunden): ${file.name}`); continue; }
 
           rows.push({ "Sample ID": sampleId, "pH": phValue });
-
           const newName = `${sampleId}.csv`;
           zip.file(newName, content);
           renamed++;
@@ -196,7 +212,6 @@ Der pH-Sorter kombiniert diese Einzeldateien automatisch in eine saubere Excel-T
           return;
         }
 
-        // Excel pH_summary.xlsx erzeugen
         const worksheet = XLSX.utils.json_to_sheet(rows);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "pH");
